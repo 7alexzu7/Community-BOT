@@ -11,7 +11,7 @@ export const botConfig = {
   // - "invisible" = appears offline
   presence: {
     // Current online state shown on Discord.
-    status: "dnd",
+    status: "online",
 
     // Activity lines shown under the bot name.
     // `type` number mapping from Discord:
@@ -23,9 +23,9 @@ export const botConfig = {
     // 5 = Competing
     activities: [
       {
-        name: "Comunitatea Sefilor", // required by Discord API, not shown in the client
-        state: "fumez biscuiti",     // this is what people actually see
-        type: 3,               // Custom
+        name: "Comunitatea Șefilor", // required by Discord API
+        state: "🛡️ CBOT | /help pentru comenzi",     // what people actually see
+        type: 3,                               // 3 = Watching
       },
     ],
   },
@@ -93,7 +93,7 @@ export const botConfig = {
   embeds: {
     colors: {
       // Main brand colors.
-      primary: "#008000",
+      primary: "#5865F2",
       secondary: "#2F3136",
 
       // Standard status colors for success/error/warning/info messages.
@@ -141,7 +141,7 @@ export const botConfig = {
     },
     footer: {
       // Default footer text used in bot embeds.
-      text: "Titan Bot",
+      text: "CBOT Security & Community System",
       // Footer icon URL (null = no icon).
       icon: null,
     },
@@ -165,7 +165,7 @@ export const botConfig = {
       // Plural display name.
       namePlural: "coins",
       // Currency symbol shown in balances.
-      symbol: "$",
+      symbol: "🪙",
     },
 
     // Starting balance for new users.
@@ -204,22 +204,14 @@ export const botConfig = {
   // =========================
   // SHOP SETTINGS
   // =========================
-  // Add shop defaults here when needed.
-  shop: {
-
-  },
+  shop: {},
 
   // =========================
   // TICKET SYSTEM
   // =========================
   tickets: {
-    // Category ID where new tickets are created (null = no forced category).
     defaultCategory: null,
-
-    // Role IDs allowed to manage/support tickets.
     supportRoles: [],
-
-    // Priority options users/staff can assign.
     priorities: {
       none: {
         emoji: "⚪",
@@ -247,14 +239,8 @@ export const botConfig = {
         label: "Urgent",
       },
     },
-
-    // Default priority for new tickets.
     defaultPriority: "none",
-
-    // Category ID where closed tickets are archived.
     archiveCategory: null,
-
-    // Channel ID where ticket logs are sent.
     logChannel: null,
   },
 
@@ -262,24 +248,12 @@ export const botConfig = {
   // GIVEAWAY SETTINGS
   // =========================
   giveaways: {
-    // Default giveaway duration in milliseconds.
-    // 86400000 = 24 hours.
     defaultDuration: 86400000,
-
-    // Allowed winner count range.
     minimumWinners: 1,
     maximumWinners: 10,
-
-    // Allowed giveaway duration range in milliseconds.
-    // 300000 = 5 minutes.
     minimumDuration: 300000,
-    // 2592000000 = 30 days.
     maximumDuration: 2592000000,
-
-    // Role IDs allowed to host giveaways.
     allowedRoles: [],
-
-    // Role IDs that bypass giveaway restrictions.
     bypassRoles: [],
   },
 
@@ -287,13 +261,8 @@ export const botConfig = {
   // BIRTHDAY SETTINGS
   // =========================
   birthday: {
-    // Role ID given to users on their birthday.
     defaultRole: null,
-
-    // Channel ID where birthday announcements are posted.
     announcementChannel: null,
-
-    // Timezone used to calculate birthday dates.
     timezone: "UTC",
   },
 
@@ -301,67 +270,30 @@ export const botConfig = {
   // VERIFICATION SETTINGS
   // =========================
   verification: {
-    // Message shown when posting the verification panel.
-    defaultMessage: "Click the button below to verify yourself and gain access to the server!",
-
-    // Text on the verification button.
-    defaultButtonText: "Verify",
-
-    // Automatic verification behavior.
+    defaultMessage: "Apasa pe butonul de mai jos pentru a te verfica si a primi acces pe server!",
+    defaultButtonText: "Verifica-te",
     autoVerify: {
-      // How automatic verification decides who is auto-approved:
-      // - "none"        = everyone is auto-verified immediately
-      // - "account_age" = account must be older than set days
-      // - "server_size" = auto-verify everyone only in smaller servers
       defaultCriteria: "none",
-
-      // Days used when `defaultCriteria` is `account_age`.
       defaultAccountAgeDays: 7,
-
-      // Member count threshold used when `defaultCriteria` is `server_size`.
-      // Example: 1000 means auto-verify if server has fewer than 1000 members.
       serverSizeThreshold: 1000,
-
-      // Allowed safety limits for account-age requirements.
-      // 1 = minimum day, 365 = maximum days.
       minAccountAge: 1,
       maxAccountAge: 365,
-
-      // If true, user receives a DM after verification.
       sendDMNotification: true,
-
-      // Human-readable descriptions for each criteria mode.
       criteria: {
         account_age: "Account must be older than specified days",
         server_size: "All users if server has less than 1000 members",
         none: "All users immediately"
       }
     },
-
-    // Minimum time between verification attempts (milliseconds).
-    // 5000 = 5 seconds.
     verificationCooldown: 5000,
-
-    // Maximum failed attempts allowed inside the time window below.
     maxVerificationAttempts: 3,
-
-    // Time window for counting attempts (milliseconds).
-    // 60000 = 1 minute.
     attemptWindow: 60000,
-
-    // In-memory safety limits (helps avoid unbounded memory growth).
     maxCooldownEntries: 10000,
     maxAttemptEntries: 10000,
-    // Cleanup frequency for cooldown/attempt maps (milliseconds).
-    // 300000 = 5 minutes.
     cooldownCleanupInterval: 300000,
-    // Maximum metadata payload size for audit entries (bytes).
     maxAuditMetadataBytes: 4096,
-    // Maximum number of audit entries kept in memory.
     maxInMemoryAuditEntries: 1000,
-    // If true, log every verification action.
     logAllVerifications: true,
-    // If true, preserve verification audit history.
     keepAuditTrail: true,
   },
 
@@ -369,17 +301,11 @@ export const botConfig = {
   // WELCOME / GOODBYE MESSAGES
   // =========================
   welcome: {
-    // Welcome template posted when a user joins.
-    // Placeholders: {user}, {server}, {memberCount}
     defaultWelcomeMessage:
-      "Welcome {user} to {server}! We now have {memberCount} members!",
-    // Goodbye template posted when a user leaves.
-    // Placeholders: {user}, {memberCount}
+      "Bine ai venit {user} pe {server}! Suntem acum {memberCount} membri!",
     defaultGoodbyeMessage:
-      "{user} has left the server. We now have {memberCount} members.",
-    // Channel ID for welcome messages.
+      "{user} a parasit serverul. Am ramas {memberCount} membri.",
     defaultWelcomeChannel: null,
-    // Channel ID for goodbye messages.
     defaultGoodbyeChannel: null,
   },
 
@@ -388,42 +314,35 @@ export const botConfig = {
   // =========================
   counters: {
     defaults: {
-      // Default naming/description templates for counter entries.
       name: "{name} Counter",
       description: "Server {name} counter",
-      // Channel type used for counters (typically "voice").
       type: "voice",
-      // Channel name format. `{count}` is replaced automatically.
       channelName: "{name}-{count}",
     },
     permissions: {
-      // Default denied permissions for the counter channel.
       deny: ["VIEW_CHANNEL"],
-      // Default allowed permissions for the counter channel.
       allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK"],
     },
     messages: {
-      // Default response messages for counter actions.
       created: "✅ Created counter **{name}**",
       deleted: "🗑️ Deleted counter **{name}**",
       updated: "🔄 Updated counter **{name}**",
     },
     types: {
-      // Built-in counter types and how each count is calculated.
       members: {
-        name: "👥 Members",
-        description: "Total members in the server",
+        name: "👥 Membri",
+        description: "Membrii totali de pe server",
         getCount: (guild) => guild.memberCount.toString(),
       },
       bots: {
-        name: "🤖 Bots",
-        description: "Total bot accounts in the server",
+        name: "🤖 Boti",
+        description: "Boti totali pe server",
         getCount: (guild) =>
           guild.members.cache.filter((m) => m.user.bot).size.toString(),
       },
       members_only: {
-        name: "👤 Humans",
-        description: "Total human members (non-bots)",
+        name: "👤 Oameni",
+        description: "Total membri umani",
         getCount: (guild) =>
           guild.members.cache.filter((m) => !m.user.bot).size.toString(),
       },
@@ -434,39 +353,30 @@ export const botConfig = {
   // GENERIC BOT MESSAGES
   // =========================
   messages: {
-    noPermission: "You do not have permission to use this command.",
-    cooldownActive: "Please wait {time} before using this command again.",
-    errorOccurred: "An error occurred while executing this command.",
-    missingPermissions:
-      "I am missing required permissions to perform this action.",
-    commandDisabled: "This command has been disabled.",
-    maintenanceMode: "The bot is currently in maintenance mode.",
+    noPermission: "Nu ai permisiunea sa folosesti aceasta comanda.",
+    cooldownActive: "Te rugam sa astepti {time} inainte de a folosi comanda din nou.",
+    errorOccurred: "A aparut o eroare in timpul executarii comenzii.",
+    missingPermissions: "Imi lipsesc permisiuni pentru a face aceasta actiune.",
+    commandDisabled: "Aceasta comanda a fost dezactivata.",
+    maintenanceMode: "Botul este momentan in mentenanta.",
   },
 
   // =========================
   // FEATURE TOGGLES
   // =========================
-  // Set any feature to `false` to disable it globally.
   features: {
-    // Core systems.
     economy: true,
     leveling: true,
     moderation: true,
     logging: true,
     welcome: true,
-
-    // Community engagement systems.
     tickets: true,
     giveaways: true,
     birthday: true,
     counter: true,
-
-    // Security and self-service systems.
     verification: true,
     reactionRoles: true,
     joinToCreate: true,
-
-    // Utility/quality-of-life modules.
     voice: true,
     search: true,
     tools: true,
@@ -499,8 +409,6 @@ export function validateConfig(config) {
   }
 
   if (process.env.NODE_ENV === 'production') {
-    // A full connection URL (DATABASE_URL / POSTGRES_URL) satisfies all Postgres
-    // requirements, matching how src/config/database/postgres.js resolves the pool config.
     const hasConnectionUrl = Boolean(process.env.POSTGRES_URL || process.env.DATABASE_URL);
 
     if (!hasConnectionUrl) {
@@ -622,10 +530,8 @@ export function getDefaultApplicationQuestions() {
 }
 
 export function getColor(path, fallback = "#99AAB5") {
-  
   if (typeof path === "number") return path;
   if (typeof path === "string" && path.startsWith("#")) {
-    
     return parseInt(path.replace("#", ""), 16);
   }
   const result = path
@@ -634,7 +540,7 @@ export function getColor(path, fallback = "#99AAB5") {
       (obj, key) => (obj && obj[key] !== undefined ? obj[key] : fallback),
       botConfig.embeds.colors,
     );
-  
+
   if (typeof result === "string" && result.startsWith("#")) {
     return parseInt(result.replace("#", ""), 16);
   }
