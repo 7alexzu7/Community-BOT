@@ -1,31 +1,50 @@
-import { Events } from 'discord.js';
-import { logEvent, EVENT_TYPES } from '../services/loggingService.js';
-import { logger } from '../utils/logger.js';
-import { buildRoleAuditLines } from '../utils/logging/logEmbeds.js';
+import { AuditLogEvent } from 'discord.js';
+
+const userRoleActions = new Map();
 
 export default {
-  name: Events.GuildRoleDelete,
-  once: false,
+    name: 'roleDelete',
+    async execute(role) {
+        const guild = role.guild;
+        if (!guild) return;
 
-  async execute(role) {
-    try {
-      if (!role.guild) return;
+        // Căutăm în Audit Log cine a șters rolul
+        const fetchedLogs = await guild.fetchAuditLogs({
+            limit: 1,
+            type: AuditLogEvent.RoleDelete,
+        }).catch(() => null);
 
-      const lines = buildRoleAuditLines(role, { includeMemberCount: true });
+        if (!fetchedLogs) return;
+        const deletionLog = fetchedLogs.entries.first();
+        if (!deletionLog) return;
 
-      await logEvent({
-        client: role.client,
-        guildId: role.guild.id,
-        eventType: EVENT_TYPES.ROLE_DELETE,
-        data: {
-          title: 'Role Deleted',
-          headline: `**${role.name}** was deleted`,
-          lines,
-        },
-      });
+        const { executor } = deletionLog;
+        if (executor.bot) return; // Ignorăm alți boți oficiali
 
-    } catch (error) {
-      logger.error('Error in roleDelete event:', error);
+        const now = Date.now();
+        const userData = userRoleActions.get(executor.id) || { count: 0, time: now };
+
+        // Resetăm contorul dacă au trecut mai mult de 10 secunde
+        if (now - userData.time > 10000) {
+            userData.count = 1;
+            userData.time = now;
+        } else {
+            userData.count++;
+        }
+
+        userRoleActions.set(executor.id, userData);
+
+        // Dacă șterge mai mult de 2 roluri în 10 secunde -> BAN instant
+        if (userData.count >= 2) {
+            try {
+                const member = await guild.members.fetch(executor.id);
+                if (member && member.bannable) {
+                    await member.ban({ reason: 'CBOT Anti-Nuke: Ștergere masivă de roluri detectată.' });
+                    console.log(`[ANTI-NUKE ROLES] ${executor.tag} a primit ban automat pentru mass-role delete.`);
+                }
+            } catch (err) {
+                console.error('Eroare Anti-Nuke Role:', err);
+            }
+        }
     }
-  }
 };
