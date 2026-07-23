@@ -12,7 +12,7 @@ export default {
     .setDescription("Delete a specific amount of messages")
     .addIntegerOption((option) =>
       option
-        .setName("amount")
+        .setName("clear")
         .setDescription("Number of messages (1-100)")
         .setRequired(true),
     )
