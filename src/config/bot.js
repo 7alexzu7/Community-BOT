@@ -23,9 +23,9 @@ export const botConfig = {
     // 5 = Competing
     activities: [
       {
-        name: "Community BOT", // required by Discord API, not shown in the client
-        state: "stalking",     // this is what people actually see
-        type: 3,               // Custom
+        name: "Comunitatea Sefilor", // required by Discord API, not shown in the client
+        state: "fumez biscuiti",     // this is what people actually see
+        type: 0,               // Custom
       },
     ],
   },
