@@ -1,5 +1,8 @@
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from 'discord.js';
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { getGuildConfig } from '../services/config/guildConfig.js';
+
+// Stocăm temporar în memorie răspunsurile corecte pentru fiecare utilizator
+const activeCaptchas = new Map();
 
 export default {
     name: 'interactionCreate',
@@ -21,10 +24,10 @@ export default {
                 }
             } 
             
-            // --- 2. GESTIONARE BUTOANE (Captcha) ---
+            // --- 2. GESTIONARE BUTOANE ---
             else if (interaction.isButton()) {
 
-                // Apăsare pe butonul principal "VERIFICA-TE"
+                // A) APAȘARE PE BUTONUL PRINCIPAL "VERIFICA-TE"
                 if (interaction.customId === 'verify_user') {
                     const CAPTCHA_OPTIONS = [
                         { label: 'Măr', emoji: '🍎', id: 'apple' },
@@ -36,6 +39,9 @@ export default {
 
                     const correctTarget = CAPTCHA_OPTIONS[Math.floor(Math.random() * CAPTCHA_OPTIONS.length)];
                     const shuffledOptions = [...CAPTCHA_OPTIONS].sort(() => Math.random() - 0.5);
+
+                    // Salvăm răspunsul corect pentru acest utilizator
+                    activeCaptchas.set(`${interaction.guild.id}_${interaction.user.id}`, correctTarget.id);
 
                     const row = new ActionRowBuilder();
                     shuffledOptions.forEach(opt => {
@@ -50,77 +56,75 @@ export default {
 
                     const captchaEmbed = new EmbedBuilder()
                         .setTitle('🔒 Verificare Anti-Bot (Captcha)')
-                        .setDescription(`Pentru a primi acces pe server, apasă pe butonul cu: **${correctTarget.emoji} ${correctTarget.label}**.\n\n⏱️ Ai **30 de secunde** la dispoziție!`)
+                        .setDescription(`Pentru a primi acces pe server, apasă pe butonul cu: **${correctTarget.emoji} ${correctTarget.label}**.`)
                         .setColor('#5865F2');
 
-                    const response = await interaction.reply({
+                    return await interaction.reply({
                         embeds: [captchaEmbed],
                         components: [row],
                         flags: 64
                     });
+                }
 
-                    const collector = response.createMessageComponentCollector({
-                        componentType: ComponentType.Button,
-                        time: 30000
-                    });
+                // B) APAȘARE PE UN BUTON DIN CAPTCHA (ex: captcha_apple)
+                if (interaction.customId.startsWith('captcha_')) {
+                    // Răspundem instant pentru a preveni "didn't respond in time"
+                    await interaction.deferUpdate().catch(() => {});
 
-                    collector.on('collect', async i => {
-                        // Răspundem instant pentru a evita timeout-ul Discord
+                    const userKey = `${interaction.guild.id}_${interaction.user.id}`;
+                    const correctId = activeCaptchas.get(userKey);
+                    const selectedId = interaction.customId.replace('captcha_', '');
+
+                    if (!correctId) {
+                        return await interaction.editReply({
+                            content: '⏱️ **Sesiunea a expirat!** Apasă din nou pe butonul principal de verificare.',
+                            embeds: [],
+                            components: []
+                        });
+                    }
+
+                    // Ștergem sesiunea
+                    activeCaptchas.delete(userKey);
+
+                    if (selectedId === correctId) {
                         try {
-                            await i.deferUpdate();
-                        } catch (e) {}
+                            const guildConfig = await getGuildConfig(client, interaction.guild.id);
+                            const roleId = guildConfig?.verification?.roleId;
 
-                        const selectedId = i.customId.replace('captcha_', '');
-
-                        if (selectedId === correctTarget.id) {
-                            try {
-                                // Căutăm rolul de verificare
-                                let roleId = null;
-                                try {
-                                    const guildConfig = await getGuildConfig(client, interaction.guild.id);
-                                    roleId = guildConfig?.verification?.roleId;
-                                } catch (cfgErr) {
-                                    console.error('Eroare citire guildConfig:', cfgErr);
-                                }
-
-                                const member = await interaction.guild.members.fetch(interaction.user.id);
-
-                                if (roleId) {
-                                    await member.roles.add(roleId);
-                                    await i.editReply({
-                                        content: '🎉 **Verificare reușită!** Ai primit acces pe server.',
-                                        embeds: [],
-                                        components: []
-                                    });
-                                } else {
-                                    await i.editReply({
-                                        content: '⚠️ Captcha corect, dar nu am găsit rolul configurat! Rulează din nou comanda `/verification setup`.',
-                                        embeds: [],
-                                        components: []
-                                    });
-                                }
-                            } catch (roleError) {
-                                console.error('Eroare la adăugare rol:', roleError);
-                                await i.editReply({
-                                    content: '❌ **Eroare permisiuni:** Mută rolul Botului mai SUS decât rolul de membru în Server Settings -> Roles!',
+                            if (!roleId) {
+                                return await interaction.editReply({
+                                    content: '⚠️ Captcha corect, dar nu este setat niciun rol! Rulează din nou `/verification setup`.',
                                     embeds: [],
                                     components: []
                                 });
                             }
-                        } else {
-                            await i.editReply({
-                                content: '❌ **Captcha greșit!** Apasă din nou pe butonul de verificare.',
+
+                            const member = await interaction.guild.members.fetch(interaction.user.id);
+                            await member.roles.add(roleId);
+
+                            return await interaction.editReply({
+                                content: '🎉 **Verificare reușită!** Ai primit acces pe server.',
+                                embeds: [],
+                                components: []
+                            });
+                        } catch (err) {
+                            console.error('Eroare la adăugarea rolului:', err);
+                            return await interaction.editReply({
+                                content: '❌ **Eroare:** Botul nu are permisiunea să-ți dea rolul. Asigură-te că rolul Botului este mai SUS decât rolul de membru în Server Settings -> Roles!',
                                 embeds: [],
                                 components: []
                             });
                         }
-                        collector.stop();
-                    });
-
-                    return;
+                    } else {
+                        return await interaction.editReply({
+                            content: '❌ **Captcha greșit!** Apasă din nou pe butonul de verificare pentru a încerca iar.',
+                            embeds: [],
+                            components: []
+                        });
+                    }
                 }
 
-                // Alte butoane (ex: shared_todo)
+                // C) ALTE BUTOANE (ex: shared_todo)
                 if (interaction.customId.startsWith('shared_todo_')) {
                     const parts = interaction.customId.split('_');
                     const buttonType = parts.slice(0, 3).join('_');
