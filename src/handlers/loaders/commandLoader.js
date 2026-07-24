@@ -7,20 +7,19 @@ import botConfig from '../../config/bot.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const MAX_COMMANDS = 100;
-const COMMAND_COUNT_WARN_THRESHOLD = 90;
+const TARGET_GUILD_ID = '1449491131669807116';
 
 function getSubcommandInfo(commandData) {
     const subcommands = [];
     
     if (commandData.options) {
         for (const option of commandData.options) {
-if (option.type === 1) {
+            if (option.type === 1) {
                 subcommands.push(option.name);
-} else if (option.type === 2) {
+            } else if (option.type === 2) {
                 if (option.options) {
                     for (const subOption of option.options) {
-if (subOption.type === 1) {
+                        if (subOption.type === 1) {
                             subcommands.push(`${option.name}/${subOption.name}`);
                         }
                     }
@@ -222,18 +221,8 @@ function validateCommands(commands) {
 }
 
 function prepareCommandsForRegistration(commands) {
-    if (commands.length >= COMMAND_COUNT_WARN_THRESHOLD) {
-        logger.warn(`Command count (${commands.length}) is near Discord's ${MAX_COMMANDS} global command limit`);
-    }
-
-    if (commands.length <= MAX_COMMANDS) {
-        return commands;
-    }
-
-    logger.warn(`Command count (${commands.length}) exceeds Discord limit (${MAX_COMMANDS}), truncating...`);
-    const truncated = commands.slice(0, MAX_COMMANDS);
-    logger.info(`Truncated to ${truncated.length} commands for registration`);
-    return truncated;
+    // Returnăm direct toate comenzile fără sa mai trunchiem la 100 (pentru că pe Guild nu avem restricția de 100)
+    return commands;
 }
 
 async function registerGlobalCommands(client, clientId, commands, totalSubcommands) {
@@ -245,7 +234,7 @@ async function registerGlobalCommands(client, clientId, commands, totalSubcomman
         throw new Error('Discord REST client is not available for slash command registration');
     }
 
-    logger.info(`Preparing to register ${totalSubcommands + commands.length} commands globally`);
+    logger.info(`Preparing to register ${totalSubcommands + commands.length} commands to guild ${TARGET_GUILD_ID}`);
     logger.info('Validating commands before registration...');
     validateCommands(commands);
     logger.info('Command validation passed');
@@ -253,14 +242,13 @@ async function registerGlobalCommands(client, clientId, commands, totalSubcomman
     const commandsToRegister = prepareCommandsForRegistration(commands);
 
     if (botConfig.commands?.deleteCommands) {
-        logger.info('Clearing existing global commands before registration...');
-        await client.rest.put(`/applications/${clientId}/commands`, { body: [] });
+        logger.info('Clearing existing guild commands before registration...');
+        await client.rest.put(`/applications/${clientId}/guilds/${TARGET_GUILD_ID}/commands`, { body: [] });
     }
 
-    logger.info(`Registering ${commandsToRegister.length} global commands...`);
-    await client.rest.put(`/applications/${clientId}/guilds/1449491131669807116/commands`, { body: commandsToRegister });
-    logger.info(`Successfully registered ${commandsToRegister.length} global commands`);
-    logger.info('Global commands may take up to an hour to appear in all servers on first deploy');
+    logger.info(`Registering ${commandsToRegister.length} guild commands...`);
+    await client.rest.put(`/applications/${clientId}/guilds/${TARGET_GUILD_ID}/commands`, { body: commandsToRegister });
+    logger.info(`Successfully registered ${commandsToRegister.length} guild commands to ${TARGET_GUILD_ID}`);
 }
 
 export async function registerCommands(client, options = {}) {
