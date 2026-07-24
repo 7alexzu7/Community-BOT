@@ -8,7 +8,7 @@ export default {
     name: 'interactionCreate',
     async execute(interaction, client) {
         try {
-            // --- 1. GESTIONARE COMANDI SLASH ---
+            // --- 1. GESTIONARE COMENZI SLASH ---
             if (interaction.isChatInputCommand()) {
                 const command = client.commands.get(interaction.commandName);
                 if (!command) return;
@@ -40,7 +40,6 @@ export default {
                     const correctTarget = CAPTCHA_OPTIONS[Math.floor(Math.random() * CAPTCHA_OPTIONS.length)];
                     const shuffledOptions = [...CAPTCHA_OPTIONS].sort(() => Math.random() - 0.5);
 
-                    // Salvăm răspunsul corect pentru acest utilizator
                     activeCaptchas.set(`${interaction.guild.id}_${interaction.user.id}`, correctTarget.id);
 
                     const row = new ActionRowBuilder();
@@ -68,7 +67,6 @@ export default {
 
                 // B) APAȘARE PE UN BUTON DIN CAPTCHA (ex: captcha_apple)
                 if (interaction.customId.startsWith('captcha_')) {
-                    // Răspundem instant pentru a preveni "didn't respond in time"
                     await interaction.deferUpdate().catch(() => {});
 
                     const userKey = `${interaction.guild.id}_${interaction.user.id}`;
@@ -83,7 +81,6 @@ export default {
                         });
                     }
 
-                    // Ștergem sesiunea
                     activeCaptchas.delete(userKey);
 
                     if (selectedId === correctId) {
@@ -124,7 +121,7 @@ export default {
                     }
                 }
 
-                // C) ALTE BUTOANE (ex: shared_todo)
+                // C) ALTE BUTOANE (ex: shared_todo sau altele)
                 if (interaction.customId.startsWith('shared_todo_')) {
                     const parts = interaction.customId.split('_');
                     const buttonType = parts.slice(0, 3).join('_');
@@ -135,8 +132,20 @@ export default {
                     }
                 }
             }
+
+            // --- 3. GESTIONARE SELECT MENUS (Dropdown-uri / Roluri) ---
+            else if (interaction.isStringSelectMenu()) {
+                // Răspundem instant pentru a preveni eroarea "didn't respond in time"
+                await interaction.deferUpdate().catch(() => {});
+
+                const selectMenu = client.selectMenus?.get(interaction.customId);
+                if (selectMenu) {
+                    await selectMenu.execute(interaction, client);
+                }
+            }
+
         } catch (globalError) {
             console.error('Eroare critica interactionCreate:', globalError);
         }
     }
-};
+};]
