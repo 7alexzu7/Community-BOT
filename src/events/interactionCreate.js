@@ -1,5 +1,6 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from 'discord.js';
 import { verifyUser } from '../services/verificationService.js';
+import { getGuildConfig } from '../services/config/guildConfig.js';
 
 export default {
     name: 'interactionCreate',
@@ -65,28 +66,52 @@ export default {
                 });
 
                 collector.on('collect', async i => {
+                    // 1. Îi spunem INSTANT Discord-ului că am procesat click-ul (Oprește "Didn't respond in time")
+                    await i.deferUpdate().catch(() => {});
+
                     const selectedId = i.customId.replace('captcha_', '');
 
                     if (selectedId === correctTarget.id) {
                         try {
-                            // Răspuns corect: apelează serviciul existent din botul tău
+                            // Încercăm prin serviciul normal de verificare
                             await verifyUser(interaction.client, interaction.guild.id, interaction.user.id);
                             
-                            await i.update({
+                            await i.editReply({
                                 content: '🎉 **Verificare reușită!** Ai primit acces complet pe server.',
                                 embeds: [],
                                 components: []
                             });
                         } catch (err) {
-                            console.error('Eroare la verificare:', err);
-                            await i.update({
-                                content: '❌ Eroare la adăugarea rolului. Verifică ierarhia rolurilor din server.',
-                                embeds: [],
-                                components: []
-                            });
+                            console.error('Eroare la verifyUser, încercăm fallback direct:', err);
+                            
+                            // Fallback direct: dacă serviciul de verificare dă eroare, îi dăm rolul direct prin Discord.js
+                            try {
+                                const guildConfig = await getGuildConfig(client, interaction.guild.id);
+                                const roleId = guildConfig?.verification?.roleId;
+
+                                if (roleId) {
+                                    const member = await interaction.guild.members.fetch(interaction.user.id);
+                                    await member.roles.add(roleId);
+
+                                    await i.editReply({
+                                        content: '🎉 **Verificare reușită!** Ai primit acces complet pe server.',
+                                        embeds: [],
+                                        components: []
+                                    });
+                                } else {
+                                    throw new Error('No verified roleId found in guild config.');
+                                }
+                            } catch (fallbackErr) {
+                                console.error('Eroare la adăugarea rolului:', fallbackErr);
+                                await i.editReply({
+                                    content: '❌ **Eroare:** Botul nu a putut adăuga rolul. Verifică ca rolul Botului să fie MAI SUS decât rolul de membru în Server Settings!',
+                                    embeds: [],
+                                    components: []
+                                });
+                            }
                         }
                     } else {
-                        await i.update({
+                        await i.editReply({
                             content: '❌ **Captcha greșit!** Apasă din nou pe butonul de verificare pentru a încerca iar.',
                             embeds: [],
                             components: []
